@@ -5,11 +5,12 @@ type TList = TItem[];
 export const mapLimit = async (
   list: TList,
   limit: number,
-  handle: (item: TItem) => any
+  handle: (item: TItem, isLast: boolean) => any
 ) => {
   if (limit > list.length) limit = list.length;
   const loop = (tasks: TList) => {
-    return handle(tasks.shift()).then(res => {
+    const isLast = tasks.length === 1;
+    return handle(tasks.shift(), isLast).then(res => {
       if (tasks.length !== 0) return loop(tasks);
       return Promise.resolve();
     });

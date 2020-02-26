@@ -1,5 +1,7 @@
+// import query from "../../db";
+
 const puppeteer = require("puppeteer");
-const { mapLimit } = require('../../utils/crawler');
+import { mapLimit } from '../../utils/crawler';
 
 interface IResult {
   url?: string;
@@ -183,7 +185,6 @@ function interceptedRequest(request) {
 async function crawling(
   browser: any,
   id: string,
-  storeInRedis: (result) => Promise<any>
 ): Promise<any> {
   const page = await browser.newPage();
   try {
@@ -206,75 +207,46 @@ async function crawling(
 
     page.removeListener("request", interceptedRequest);
     await page.close();
-    await storeInRedis(result);
+    return result
   } catch (error) {
+    console.log(id, '===', error)
     page.removeListener("request", interceptedRequest);
     await page.close();
-    return Promise.reject(`Id:${id} is invalid!`);
+    return Promise.reject(id);
   }
 }
 
-interface IConfig {
-  url: string;
-  user: string;
-  pwd: string;
-  collection: string;
-}
-interface IStoreInRedis {
-  // (result: IResult): Promise<any>;
-  (config: IConfig): (result: IResult) => Promise<any>;
-}
-
-const storeInRedis: IStoreInRedis = (config: IConfig) => async (
+const storeInRedis = (mission_id: any, isLast: boolean) => async (
   result: IResult
 ) => {
+  // query('kijijiauto_detail', [{mission_id: mission_id, crawl_date: new Date().getTime(), data_info: result, isLast }])
+  console.log('isLast: ', isLast);
   console.log(result);
-  //   const name = path.join(
-  //     __dirname,
-  //     (result.title || "").substring(0, 5).trim() + ".json"
-  //   );
-  //   console.log("[name]: ", name);
-  //   writeJSON(name, JSON.stringify(result), () =>
-  //     console.log("write file success!")
-  //   );
 };
 
-interface IProps {
-  list: string[];
-}
-
-export default async function kijijiCarDetail(props: IProps) {
+export default async function kijijiCarDetail({mission_id, crawl_queue}) {
   try {
-    console.log("------------------------kijijiauto crawling------------------------");
-    console.time("crawler used time");
-    const result_store_address = {
-        url: "127.0.0.1:27017",
-        user: "brain",
-        pwd: "admin4tradex",
-        collection: "kijijiauto_detail"
-      };
-
-      const { list } = props;
-
+    console.log('start')
+    console.time('used time')
     const browser = await puppeteer.launch();
     const success_list = [];
     const error_list = [];
     const limit = 10;
-    await mapLimit(list, limit, id =>
-      crawling(browser, id, storeInRedis(result_store_address))
-        .then(() => {
-          success_list.push(id);
-          console.log('success: ', id);
+    await mapLimit(crawl_queue, limit, (id, isLast) =>
+      crawling(browser, id)
+        .then((item) => {
+          success_list.push(id)
+          console.log('item: ', item)
+          storeInRedis(mission_id, isLast)(item)
         })
-        .catch(() => {
-          error_list.push(id);
-          console.log('error: ', id);
+        .catch((e) => {
+          error_list.push(id)
+          console.log('error item: ', e)
         })
     );
     await browser.close();
-    console.log("------------------------finished!------------------------");
-    console.timeEnd("crawler used time");
-  } catch (e) {
-    console.log("kijiji detail page crawler error: ", e);
+    console.timeEnd('used time')
+  }catch (e) {
+    console.log('kijijiCarDetail: ', e)
   }
 }

@@ -1,9 +1,9 @@
 import eblockDetailCrawler from '../crawler/eblock/detail';
 async function EBlockController(ctx) {
     try {
-        const { crawl_queue } = ctx.request.body;
+        const { crawl_queue, mission_id } = ctx.request.body;
         console.log(crawl_queue);
-        await eblockDetailCrawler({list: crawl_queue});
+        await eblockDetailCrawler({ ids: crawl_queue, mission_id });
     }catch(e) {
         console.log('EBlockController: ', e);
     }

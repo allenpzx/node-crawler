@@ -1,9 +1,16 @@
-const KijijiautoController = async (ctx) => {
-    try {
-        const { ids } = ctx.request.body;
-    }catch(e) {
-        console.log('KijijiautoController: ', e);
-    }
-}
+import kijijiautoDetailCrawler from "../crawler/kijijiauto/detail";
 
-export default KijijiautoController
+const KijijiautoController = async ctx => {
+  try {
+    const { crawl_queue, mission_id } = ctx.request.body;
+    await kijijiautoDetailCrawler({
+      crawl_queue,
+      mission_id
+    });
+    console.log('[kijijiauto crawler finished !]');
+  } catch (e) {
+    console.log("KijijiautoController: ", e);
+  }
+};
+
+export default KijijiautoController;

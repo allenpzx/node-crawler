@@ -2,10 +2,12 @@ import Koa from "koa";
 import json from "koa-json";
 import koaBody from "koa-body";
 import routers from "./router";
+import ErrorHandle from './controller/error';
 const app = new Koa();
 const port = 3000;
 
 // middleware
+app.use(ErrorHandle)
 app.use(json());
 app.use(koaBody());
 
