@@ -206,7 +206,6 @@ const mapParamToHandles = {
           }${await getText(page, handle[i])}`;
           str += next;
         }
-        console.log("str: ", str);
         return str;
       }
       return "";
@@ -228,7 +227,6 @@ const mapParamToHandles = {
           }${await getText(page, handle[i])}`;
           str += next;
         }
-        console.log("str: ", str);
         return str;
       }
       return "";
@@ -326,7 +324,7 @@ async function eblockDetailCrawler(props: IProps) {
     };
 
     const { list } = props;
-    const browser = await puppeteer.launch({ headless: false });
+    const browser = await puppeteer.launch();
     const success_list = [];
     const error_list = [];
     const limit = 10;
