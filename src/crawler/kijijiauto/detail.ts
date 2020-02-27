@@ -1,7 +1,7 @@
 // import query from "../../db";
 
 const puppeteer = require("puppeteer");
-import { mapLimit } from '../../utils/crawler';
+import { mapLimit } from "../../utils/crawler";
 
 interface IResult {
   url?: string;
@@ -141,9 +141,9 @@ const mapParamToHandles = {
       //   return typeof str === "string" ? str : null;
       return _handle
         ? await page.evaluate(item => {
-            console.log(item)
-            return item.action
-        }, _handle)
+            console.log(item);
+            return item.action;
+          }, _handle)
         : empty_placeholder;
     } catch (error) {
       console.log("[get carfax_url error]: ", error);
@@ -182,10 +182,7 @@ function interceptedRequest(request) {
 /**
  * 数据爬取
  */
-async function crawling(
-  browser: any,
-  id: string,
-): Promise<any> {
+async function crawling(browser: any, id: string): Promise<any> {
   const page = await browser.newPage();
   try {
     let result = {};
@@ -207,9 +204,8 @@ async function crawling(
 
     page.removeListener("request", interceptedRequest);
     await page.close();
-    return result
+    return result;
   } catch (error) {
-    console.log(id, '===', error)
     page.removeListener("request", interceptedRequest);
     await page.close();
     return Promise.reject(id);
@@ -219,34 +215,54 @@ async function crawling(
 const storeInRedis = (mission_id: any, isLast: boolean) => async (
   result: IResult
 ) => {
-  // query('kijijiauto_detail', [{mission_id: mission_id, crawl_date: new Date().getTime(), data_info: result, isLast }])
-  console.log('isLast: ', isLast);
-  console.log(result);
+  // query("kijijiauto_detail", [
+  //   {
+  //     mission_id: mission_id,
+  //     crawl_date: new Date().getTime(),
+  //     data_info: result,
+  //     isLast
+  //   }
+  // ]);
+  console.log("isLast: ", isLast);
+  console.log("result: ", result);
 };
 
-export default async function kijijiCarDetail({mission_id, crawl_queue}) {
+interface IProps {
+  (props: {
+    mission_id: string,
+    queue: string[]
+  }): Promise<any>
+}
+
+const kijijiCarDetail:IProps = async function ({mission_id, queue}) {
   try {
-    console.log('start')
-    console.time('used time')
+    console.log("start");
+    console.time("used time");
     const browser = await puppeteer.launch();
     const success_list = [];
     const error_list = [];
     const limit = 10;
-    await mapLimit(crawl_queue, limit, (id, isLast) =>
+    await mapLimit(queue, limit, (id, isLast) =>
       crawling(browser, id)
-        .then((item) => {
-          success_list.push(id)
-          console.log('item: ', item)
-          storeInRedis(mission_id, isLast)(item)
+        .then(item => {
+          success_list.push(id);
+          storeInRedis(mission_id, isLast)(item);
+          console.log("item: ", item);
         })
-        .catch((e) => {
-          error_list.push(id)
-          console.log('error item: ', e)
+        .catch(e => {
+          error_list.push(id);
+          storeInRedis(mission_id, isLast)({});
+          console.log("error id: ", id);
         })
     );
     await browser.close();
-    console.timeEnd('used time')
-  }catch (e) {
-    console.log('kijijiCarDetail: ', e)
+    console.log("success_list: ", success_list);
+    console.log("error_list: ", error_list);
+    console.timeEnd("used time");
+  } catch (e) {
+    console.log("kijijiCarDetail: ", e);
+    return Promise.reject(e);
   }
 }
+
+export default kijijiCarDetail

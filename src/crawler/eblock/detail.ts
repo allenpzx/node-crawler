@@ -1,7 +1,13 @@
 const puppeteer = require("puppeteer");
 const url = require("url");
 import { mapLimit, getText, getHref } from "../../utils/crawler";
-import { Login, isLoginPage } from "./login";
+import {
+  Login,
+  isLoginPage,
+  closeModal,
+  getMileageNumber,
+  getMileageUnit
+} from "./util";
 import { get as _get } from "lodash";
 
 interface IResult {
@@ -104,10 +110,12 @@ const mapParamToHandles = {
       el => (el && el.textContent ? el.textContent : ""),
       handle
     );
-    if (!str) return "";
-    const regex = /^\d+[0-9\,]+\d/;
-    const res = str.match(regex);
-    return res ? res[0] : "";
+
+    // if (!str) return "";
+    // const regex = /^\d+[0-9\,]+\d/;
+    // const res = str.match(regex);
+    // return res ? res[0] : "";
+    return getMileageNumber(str);
   },
   odometer_unit: async (page: any, result: IResult) => {
     const handle = await page.$(
@@ -118,10 +126,11 @@ const mapParamToHandles = {
       el => (el && el.textContent ? el.textContent : ""),
       handle
     );
-    if (!str) return "";
-    const regex = /[a-z]+/;
-    const res = str.match(regex);
-    return res ? res[0] : "";
+    // if (!str) return "";
+    // const regex = /[a-z]+/;
+    // const res = str.match(regex);
+    // return res ? res[0] : "";
+    return getMileageUnit(str);
   },
   doors:
     "#VehicleDetails > section:nth-of-type(2) [class^=inventory] > section:nth-of-type(5) [class^=sectionContentInner] [class^=featureList] button:nth-of-type(7) [class^=featureListItemText] > p:nth-of-type(2)",
@@ -240,7 +249,7 @@ const mapParamToHandles = {
           "#VehicleDetails + [class^=details] > [class^=inner] > [class^=header] > [class~=button]"
         );
       }
-      return {...results.damages_detail, ...result}
+      return { ...results.damages_detail, ...result };
     } catch (error) {
       console.log("damages detail: ", error);
       return {};
@@ -316,36 +325,34 @@ const mapParamToHandles = {
 const generateUrl = (id: string) =>
   `https://app.eblock.com/buy/run-list?distance=500&id=${id}&mileageLTE=105780&savedSearchId=a195a720-5a2a-46ad-91ac-018f862484a3&yearGTE=2013`;
 
-const closeModal = async page => {
-  try {
-    await page.waitFor("#modal-root button[class^=close]");
-    await page.click("#modal-root button[class^=close]");
-  } catch (e) {
-    console.log("close modal error");
-  }
-};
+// const closeModal = async page => {
+//   try {
+//     await page.waitFor("#modal-root button[class^=close]");
+//     await page.click("#modal-root button[class^=close]");
+//   } catch (e) {
+//     console.log("close modal error");
+//     return Promise.reject(e)
+//   }
+// };
 
 /**
  * 数据爬取
  */
-async function crawling(
-  browser: any,
-  id: string,
-): Promise<any> {
+async function crawling(browser: any, id: string): Promise<any> {
   let result: IResult = resultInit;
   const interceptor = async res => {
     try {
       if (res.url().indexOf("/graphql") >= 0) {
-        const ct = res.headers()['content-type'];
-        const isok = ct && ct.startsWith('application/json');
-        if(!isok) return
+        const ct = res.headers()["content-type"];
+        const isok = ct && ct.startsWith("application/json");
+        if (!isok) return;
         const data = await res.json();
         // handle car images
         const photos = _get(data, "data.auctionItem.inventoryItem.photos");
         const image_urls =
           (Array.isArray(photos) && photos.map(v => _get(v, "main"))) || [];
-        if(image_urls) {
-          result.image_urls = image_urls.length > 0 ? image_urls : []
+        if (image_urls) {
+          result.image_urls = image_urls.length > 0 ? image_urls : [];
         }
 
         // handle car tires
@@ -356,7 +363,7 @@ async function crawling(
         if (tires) {
           const ok_placement = "YES";
           const unok_placement = "NO";
-          const empty_placement=  '';
+          const empty_placement = "";
           const obj = {
             TPMS: _get(tires, "tirePressureMonitoringSystem")
               ? ok_placement
@@ -373,12 +380,14 @@ async function crawling(
             Left_Front_Tire: {
               Brand: _get(tires, "driverFrontBrand") || empty_placement,
               Tire_Size: _get(tires, "driverFrontSize") || empty_placement,
-              Tread: _get(tires, "driverFrontTread.formatted") || empty_placement
+              Tread:
+                _get(tires, "driverFrontTread.formatted") || empty_placement
             },
             Right_Front_Tire: {
               Brand: _get(tires, "passengerFrontBrand") || empty_placement,
               Tire_Size: _get(tires, "passengerFrontSize") || empty_placement,
-              Tread: _get(tires, "passengerFrontTread.formatted") || empty_placement
+              Tread:
+                _get(tires, "passengerFrontTread.formatted") || empty_placement
             },
             Left_Back_Tire: {
               Brand: _get(tires, "driverRearBrand") || empty_placement,
@@ -388,7 +397,8 @@ async function crawling(
             Right_Back_Tire: {
               Brand: _get(tires, "passengerRearBrand") || empty_placement,
               Tire_Size: _get(tires, "passengerRearSize") || empty_placement,
-              Tread: _get(tires, "passengerRearTread.formatted") || empty_placement
+              Tread:
+                _get(tires, "passengerRearTread.formatted") || empty_placement
             }
           };
           result = {
@@ -400,7 +410,7 @@ async function crawling(
     } catch (e) {
       console.log("catch response: ", e);
     }
-  }
+  };
   const page = await browser.newPage();
   try {
     await page.on("response", interceptor);
@@ -418,22 +428,18 @@ async function crawling(
       return (result[k] = await v(page, result));
     });
     await Promise.all(pendings);
-    // await store(result);
     await page.removeListener("request", interceptor);
     await page.close();
-    // console.log("result: ", result);
-    return result
+    return result;
   } catch (e) {
     page.removeListener("request", interceptor);
     await page.close();
-    console.log("error: ", e);
-    return Promise.reject(id)
+    console.log("Invalid id: ", id);
+    return Promise.reject(id);
   }
 }
 interface IProps {
-  (props: { ids: string[]; mission_id: string }): Promise<
-    any
-  >;
+  (props: { queue: string[]; mission_id: string }): Promise<any>;
 }
 
 const eblockDetailCrawler: IProps = async function(props) {
@@ -441,21 +447,21 @@ const eblockDetailCrawler: IProps = async function(props) {
     console.log("------------------------crawling------------------------");
     console.time("used time");
 
-    const { ids, mission_id } = props;
+    const { queue, mission_id } = props;
     const browser = await puppeteer.launch();
     const success_list = [];
     const error_list = [];
     const limit = 10;
 
-    await mapLimit(ids, limit, (id, isLast) =>
+    await mapLimit(queue, limit, (id, isLast) =>
       crawling(browser, id)
         .then((item: IResult) => {
-          success_list.push(id)
-          console.log('success', '[', id, ']' ,item);
+          success_list.push(id);
+          console.log("success", "[", id, "]", item);
         })
-        .catch((e) => {
-          error_list.push(id)
-          console.log('error', '[', id, ']', e)
+        .catch(e => {
+          error_list.push(id);
+          console.log("error", "[", id, "]");
         })
     );
     await browser.close();
@@ -463,6 +469,7 @@ const eblockDetailCrawler: IProps = async function(props) {
     console.timeEnd("used time");
   } catch (e) {
     console.log("[eblock detail page crawler error]: ", e);
+    return Promise.reject(e);
   }
 };
 

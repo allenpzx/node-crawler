@@ -4,7 +4,7 @@ const KijijiautoController = async ctx => {
   try {
     const { crawl_queue, mission_id } = ctx.request.body;
     await kijijiautoDetailCrawler({
-      crawl_queue,
+      queue: crawl_queue,
       mission_id
     });
     console.log('[kijijiauto crawler finished !]');
