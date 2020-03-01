@@ -28,6 +28,7 @@
     "koa-json": "^2.0.2",
     "koa-router": "^8.0.8",
     "lodash": "^4.17.15",
+    "node-xlsx": "^0.15.0",
     "puppeteer": "^2.1.1"
   }
 }
