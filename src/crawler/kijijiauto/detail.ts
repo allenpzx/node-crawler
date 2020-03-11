@@ -1,7 +1,6 @@
-// import query from "../../db";
-
 const puppeteer = require("puppeteer");
 import { mapLimit } from "../../utils/crawler";
+import { get as myGet } from "lodash";
 
 interface IResult {
   url?: string;
@@ -31,133 +30,69 @@ interface IResult {
 
 const empty_placeholder = "";
 
-const mapParamToHandles = {
-  url: async (page: any) => await page.url(),
-  title: "#root [data-testid=vip] section div div section h1",
-  current_price:
-    "#root [data-testid=vip] section div div section h1 + div span span",
-  condition:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=overview] table tbody > tr:nth-child(1) td span",
-  make:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=overview] table tbody > tr:nth-child(2) td span",
-  model:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=overview] table tbody > tr:nth-child(3) td span",
-  year:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=overview] table tbody > tr:nth-child(4) td span",
-  trim:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=overview] table tbody > tr:nth-child(5) td span",
-  odometer: async page => {
-    try {
-      const _handle = await page.$(
-        "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=overview] table tbody > tr:nth-child(6) td span"
-      );
-      const str = await page.evaluate(getText, _handle);
-      const regex = /^\d+[0-9\,]+\d/;
-      return typeof str === "string" && str.match(regex)
-        ? str.match(regex)[0]
-        : empty_placeholder;
-    } catch (error) {
-      console.log("[get odometer error]: ", error);
-      return empty_placeholder;
-    }
+const mapParamToState = {
+  url: async (page: any) => {
+    return (
+      (await page.evaluate(() => {
+        return window.location.href;
+      })) || ""
+    );
   },
-  odometer_unit: async page => {
-    try {
-      const _handle = await page.$(
-        "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=overview] table tbody > tr:nth-child(6) td span"
-      );
-      const str = await page.evaluate(getText, _handle);
-      const regex = /[a-z]+/;
-      return typeof str === "string" && str.match(regex)
-        ? str.match(regex)[0]
-        : empty_placeholder;
-    } catch (error) {
-      console.log("[get odometer_unit error]: ", error);
-      return empty_placeholder;
-    }
-  },
-  body_style:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=overview] table tbody > tr:nth-child(7) td span",
-  colour:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=overview] table tbody > tr:nth-child(8) td span",
-  vehicle_id:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=overview] table tbody > tr:nth-child(9) td span",
-  transmission:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=mechanical] table tbody > tr:nth-child(1) td span",
-  fuel_type:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=mechanical] table tbody > tr:nth-child(2) td span",
-  drivetrain:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=mechanical] table tbody > tr:nth-child(3) td span",
-  cylinders:
-    "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=mechanical] table tbody > tr:nth-child(4) td span",
-  equipment: async page => {
-    try {
-      //   const _handle = '#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=equipment] > ul > li > span';
-      //   console.log('hanlde: ', _handle)
-      //   const res = await page.$$eval(_handle, eles => {
-      //       let strs = '';
-      //       console.log('eles: ', eles);
-      //       eles.map((v: any, i, arr)=> v ? strs += `${(i === arr.length - 1 || i === 0) ? '' : ';'}${v.textContent}` : '')
-      //       return strs
-      //   })
-      //   console.log('res: ', res)
-      //   return res
-
-      let strs = "";
-      let i = 0;
-      const _handle = await page.$$(
-        "#root [data-testid=vip] > div:last-child > div:first-child section > div > div > section #trackContainer > div [data-testid=equipment] > ul > li > span"
-      );
-      const arrHandle = Array.from(_handle);
-      for (const item of arrHandle) {
-        const it = await page.evaluate(v => {
-          return v && v.textContent ? v.textContent : "";
-        }, item);
-        strs += it
-          ? `${i === arrHandle.length - 1 || i === 0 ? "" : ";"}${it}`
-          : "";
-        i++;
-      }
-      return strs;
-    } catch (error) {
-      console.log("[get equipment error]: ", error);
-      return empty_placeholder;
-    }
-  },
-  description:
-    "[data-testid=ListingDescriptionSection] > div > div:nth-child(1) > div:nth-child(1) span",
-  avg_sold_price:
-    "[data-testid=RatingMetric] [data-testid=PriceRatingHeader] div > dl:nth-child(2) dd span",
   carfax_url: async page => {
     try {
-      //   const _handle = "section[data-testid=VehicleHistorySection] form";
-      //   const str = await page.$eval(_handle, item => item.action);
-      //   return typeof str === "string" ? str : null;
-
       const _handle = await page.$(
         "section [data-testid=VehicleHistorySection] form"
       );
-      //   const str = await page.$eval(_handle, item => item.action);
-      //   return typeof str === "string" ? str : null;
-      return _handle
-        ? await page.evaluate(item => {
-            console.log(item);
+      if (_handle) {
+        return (
+          (await page.evaluate(item => {
             return item.action;
-          }, _handle)
-        : empty_placeholder;
+          }, _handle)) || ""
+        );
+      }
+
+      return (
+        (await page.evaluate(() => {
+          const _get = (data: any, path: string[] | string) => {
+            if (typeof path === "string") {
+              path = path.split(".");
+            }
+            var i,
+              len = path.length;
+            for (i = 0; typeof data === "object" && i < len; ++i) {
+              if (data === null || data === undefined) return false;
+              data = data[path[i]];
+            }
+            return data;
+          };
+
+          const buyReportUrl = _get(
+            window,
+            "INITIAL_STATE.pages.vip.listing.vehicleReport.buyReportUrl"
+          );
+          return buyReportUrl;
+        })) || ""
+      );
     } catch (error) {
       console.log("[get carfax_url error]: ", error);
       return empty_placeholder;
     }
   },
-  seller_name:
-    "[data-testid=ListingSellerInformationSection] [data-testid=SellerInformationSectionMap]+div > span",
-  seller_star:
-    "[data-testid=ListingSellerInformationSection] [data-testid=SellerInformationSectionMap]+div > [data-testid=SellerInformationSectionReviews] > div > span"
+  title: "INITIAL_STATE.pages.vip.listing.title",
+  current_price:
+    "INITIAL_STATE.pages.vip.listing.prices.consumerPrice.localized",
+  vehicle_id: "INITIAL_STATE.pages.vip.listing.id",
+  description: "INITIAL_STATE.pages.vip.listing.htmlDescription",
+  avg_sold_price: "INITIAL_STATE.pages.vip.listing.priceRating.averagePrice",
+  seller_name: [
+    "INITIAL_STATE.pages.vip.listing.contact.name",
+    "INITIAL_STATE.pages.vip.listing.contact.type"
+  ],
+  seller_start: "INITIAL_STATE.pages.vip.listing.dealerRating.rating"
 };
 
 const abort_list = [
-  "en_US/fbevents.js",
+  "/en_US/fbevents.js",
   "/consumer/auth-cis/exchange",
   "/async_usersync",
   "/agent/v3/latest/t.js",
@@ -165,42 +100,142 @@ const abort_list = [
   "/bat.js"
 ];
 const detail_base_url = "https://www.kijijiautos.ca/vip/";
-const getText = (el: any): string | null => {
-  try {
-    return el && el.textContent ? el.textContent : "";
-  } catch (error) {
-    return "";
-  }
-};
 
 function interceptedRequest(request) {
-  if (abort_list.some(v => request.url().indexOf(v) > -1))
+  if (abort_list.some(v => request.url().indexOf(v) > -1)) {
     return request.abort();
+  }
+  if (
+    request.url().endsWith(".jpg") ||
+    request.url().endsWith(".woff2") ||
+    request.url().endsWith(".svg") ||
+    request.url().endsWith(".woff")
+  ) {
+    return request.abort();
+  }
   request.continue();
 }
 
-/**
- * 数据爬取
- */
+
 async function crawling(browser: any, id: string): Promise<any> {
   const page = await browser.newPage();
+  const _url = `${detail_base_url}${id}/`
   try {
     let result = {};
-    page.on("request", interceptedRequest);
-    const _url = `${detail_base_url}${id}/`;
-    await page.setDefaultNavigationTimeout(0);
     await page.setRequestInterception(true);
+    page.on("request", interceptedRequest);
     await page.goto(_url);
-    await page.waitFor(mapParamToHandles["title"], { timeout: 5000 });
 
-    const pendings = Object.entries(mapParamToHandles).map(async ([k, v]) => {
+    await page.waitForResponse(response =>
+      response.url().indexOf(`/vip/${id}`)
+    );
+
+    const pageName = await page.evaluate(res => {
+      const _get = (data: any, path: string[] | string) => {
+        if (typeof path === "string") {
+          path = path.split(".");
+        }
+        var i,
+          len = path.length;
+        for (i = 0; typeof data === "object" && i < len; ++i) {
+          if (data === null || data === undefined) return false;
+          data = data[path[i]];
+        }
+        return data;
+      };
+
+      return _get(window, "INITIAL_STATE.page");
+    });
+
+    if (pageName !== "vip") {
+      throw Error("Invalid car id.");
+    }
+
+    // fixed fields
+    const pendings = Object.entries(mapParamToState).map(async ([k, v]) => {
       if (typeof v === "function") {
-        return Reflect.set(result, k, await v(page));
+        return (result[k] = await v(page));
       }
-      const _handle = await page.$(v);
-      return Reflect.set(result, k, await page.evaluate(getText, _handle));
+
+      result[k] =
+        (await page.evaluate(path => {
+          const _get = (data: any, path: string[] | string) => {
+            if (typeof path === "string") {
+              path = path.split(".");
+            }
+            var i,
+              len = path.length;
+            for (i = 0; typeof data === "object" && i < len; ++i) {
+              if (data === null || data === undefined) return false;
+              data = data[path[i]];
+            }
+            return data;
+          };
+
+          if (Array.isArray(path)) {
+            let matched;
+            path.find(v => {
+              const val = _get(window, v);
+              if (val) {
+                matched = val;
+                return true;
+              }
+            });
+            return matched;
+          }
+
+          return _get(window, path);
+        }, v)) || "";
     });
     await Promise.all(pendings);
+
+    // dynamic fields
+    try {
+      const list =
+        (await page.evaluate(() => {
+          const _get = (data: any, path: string[] | string) => {
+            if (typeof path === "string") {
+              path = path.split(".");
+            }
+            var i,
+              len = path.length;
+            for (i = 0; typeof data === "object" && i < len; ++i) {
+              if (data === null || data === undefined) return false;
+              data = data[path[i]];
+            }
+            return data;
+          };
+
+          return _get(
+            window,
+            "INITIAL_STATE.pages.vip.listing.attributeGroups"
+          );
+        })) || [];
+
+      let _detail = {};
+
+      list.map(v => {
+        if (myGet(v, "tag", "") === "equipment") {
+          let equipment = "";
+          v.attributes.map((item, i, all) => {
+            const val = myGet(item, "values[0]");
+            equipment += val ? `${val}${i < all.length - 1 ? ";" : ""}` : "";
+          });
+
+          _detail["equipment"] = equipment;
+          return;
+        }
+        v.attributes.map(item => {
+          if (myGet(item, "values[1]")) {
+            _detail[item.values[0]] = item.values[1];
+          }
+        });
+      });
+
+      result = { ...result, ..._detail };
+    } catch (error) {
+      console.log("[get overview error]: ", error);
+    }
 
     page.removeListener("request", interceptedRequest);
     await page.close();
@@ -208,37 +243,41 @@ async function crawling(browser: any, id: string): Promise<any> {
   } catch (error) {
     page.removeListener("request", interceptedRequest);
     await page.close();
-    return Promise.reject(id);
+    return Promise.reject({url: _url, vehicle_id: id});
   }
 }
 
 const storeInRedis = (mission_id: any, isLast: boolean) => async (
   result: IResult
 ) => {
-  // query("kijijiauto_detail", [
-  //   {
-  //     mission_id: mission_id,
-  //     crawl_date: new Date().getTime(),
-  //     data_info: result,
-  //     isLast
-  //   }
-  // ]);
+  // store in redis
   console.log("isLast: ", isLast);
   console.log("result: ", result);
 };
 
-interface IProps {
-  (props: {
-    mission_id: string,
-    queue: string[]
-  }): Promise<any>
-}
+// test
 
-const kijijiCarDetail:IProps = async function ({mission_id, queue}) {
+// const crawl_queue = [
+//   // "13719105",
+//   // "12926572",
+//   // "12953570",
+//   "10805682",
+//   "123",
+//   "2727598"
+//   // "12926572"
+// ];
+// const mission_id = "mission_id";
+// kijijiCarDetail(mission_id, crawl_queue);
+
+export default async function kijijiCarDetail(mission_id, queue) {
   try {
-    console.log("start");
+    console.log("[kijijiauto detail crawl start]");
     console.time("used time");
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      headless: true,
+      devtools: false,
+      args: ["--no-sandbox"]
+    });
     const success_list = [];
     const error_list = [];
     const limit = 10;
@@ -247,22 +286,18 @@ const kijijiCarDetail:IProps = async function ({mission_id, queue}) {
         .then(item => {
           success_list.push(id);
           storeInRedis(mission_id, isLast)(item);
-          console.log("item: ", item);
         })
         .catch(e => {
           error_list.push(id);
-          storeInRedis(mission_id, isLast)({});
-          console.log("error id: ", id);
+          storeInRedis(mission_id, isLast)(e);
         })
     );
     await browser.close();
-    console.log("success_list: ", success_list);
-    console.log("error_list: ", error_list);
+    console.log("success: ", success_list);
+    console.log("error: ", error_list);
     console.timeEnd("used time");
   } catch (e) {
     console.log("kijijiCarDetail: ", e);
     return Promise.reject(e);
   }
 }
-
-export default kijijiCarDetail

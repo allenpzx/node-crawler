@@ -13,6 +13,4 @@ async function LinkedInSearchController(ctx) {
   }
 }
 
-LinkedInSearch()
-
 export default LinkedInSearchController;
