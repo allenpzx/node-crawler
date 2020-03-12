@@ -50,8 +50,8 @@ const nextPage = async page => {
 
 const EBlockListCrawler = async function() {
   try {
-    console.log("eblock list crawl start");
-    console.time("used time");
+    console.log("[eblock list crawl start]");
+    console.time('used time')
     let result: IResult = resultInit;
     const runlist_url = `https://app.eblock.com/buy/run-list?distance=500&id=5e061b64-51d0-42c5-9103-6239e41a78af&mileageLTE=105780&savedSearchId=a195a720-5a2a-46ad-91ac-018f862484a3&yearGTE=2013`;
     const browser = await puppeteer.launch();
@@ -85,7 +85,7 @@ const EBlockListCrawler = async function() {
               make: _get(v, "node.inventoryItem.make", ""),
               model: _get(v, "node.inventoryItem.model", ""),
               trim: _get(v, "node.inventoryItem.trim", ""),
-              vehicle_id: _get(v, "node.inventoryItem.id", ""),
+              vehicle_id: _get(v, "node.id", ""),
               odometer: getMileageNumber(
                 _get(v, "node.inventoryItem.mileage.formattedAmount", "")
               ),
@@ -123,12 +123,13 @@ const EBlockListCrawler = async function() {
       result.section = pathname || "";
     });
 
-    page.removeListener("request", interceptor);
+    
+    page.removeListener('request', interceptor);
     await page.close();
     await browser.close();
-    console.log("finished!");
-    console.timeEnd("used time");
-    return result;
+    console.log("finished!")
+    console.timeEnd('used time')
+    return result
   } catch (e) {
     console.log("EBlockListCrawler: ", e);
     return Promise.reject(e);
