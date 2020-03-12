@@ -7,37 +7,43 @@ import { Login, isLoginPage } from "./util";
 import { get as _get, isEmpty } from "lodash";
 
 interface IResult {
-  url: string;
-  section: string;
-  year: string;
-  make: string;
-  model: string;
-  trim: string;
-  stock: string;
-  odometer: string;
-  doors: string;
-  passengers: string;
-  body_type: string;
-  exterior_color: string;
-  interior_color: string;
-  transmission: string;
-  drivetrain: string;
-  fuel_type: string;
-  options: string;
-  seller_notes: string;
-  seller_name: string;
-  pick_up_location: string;
-  auction: string;
-  auction_date: string;
-  starting_bid: string;
-  carfax_url: string;
-  score: string;
-  declaration: string;
-  vin: string;
-  damages_detail: {};
-  tires: {};
-  paint: {};
-  image_urls: string[];
+  url?: string;
+  section?: string;
+  title?: string;
+  year?: string | number;
+  make?: string;
+  model?: string;
+  trim?: string;
+  stock?: string;
+  odometer?: string;
+  doors?: string | number;
+  passengers?: string | number;
+  body_type?: string;
+  exterior_color?: string;
+  interior_color?: string;
+  transmission?: string;
+  drivetrain?: string;
+  fuel_type?: string;
+  options?: any[];
+  seller_notes?: string;
+  seller_name?: string;
+  runnumber?: string;
+  lane?: string;
+  auction?: string;
+  auction_date?: string;
+  starting_bid?: string | number;
+  carfax_url?: string;
+  score?: string | number;
+  tires?: any;
+  paint?: any;
+  declaration?: any[];
+  image_urls?: any[];
+  vin?: string;
+  vehicle_id?: string;
+  cylinders?: string | number;
+  displacement?: string | number;
+  damage_detail?: string[];
+  pick_up_location?: string;
 }
 
 const mapParamToResponse = {
@@ -174,7 +180,6 @@ async function crawling(browser: any, id: string): Promise<any> {
           );
         }
       });
-
     });
 
     result.url = (await page.evaluate(() => window.location.href)) || "";
@@ -182,7 +187,6 @@ async function crawling(browser: any, id: string): Promise<any> {
       URL.parse(await page.evaluate(() => window.location.href)),
       "pathname"
     );
-    // await page.waitFor("#VehicleDetails");
 
     interceptor && (await page.removeListener("request", interceptor));
     await page.close();
@@ -198,10 +202,12 @@ interface IProps {
 }
 
 function pipeDetail(item) {
-  const fileName = path.resolve(__dirname, './details.json');
-  const isExist = fs.existsSync(fileName)
-  const fileData = JSON.stringify((isExist ? JSON.parse(fs.readFileSync(fileName)) : []).concat(item))
-  fs.writeFileSync(fileName, fileData)
+  const fileName = path.resolve(__dirname, "./details.json");
+  const isExist = fs.existsSync(fileName);
+  const fileData = JSON.stringify(
+    (isExist ? JSON.parse(fs.readFileSync(fileName)) : []).concat(item)
+  );
+  fs.writeFileSync(fileName, fileData);
 }
 
 const eblockDetailCrawler: IProps = async function(props) {

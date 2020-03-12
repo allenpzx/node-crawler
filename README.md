@@ -2,6 +2,8 @@
 
 nodejs crawler project
 
+prefer api catch or state catch
+
 👇 is the crawled project
 
 - `kijijiauto`
