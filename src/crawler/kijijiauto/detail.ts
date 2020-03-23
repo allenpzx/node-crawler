@@ -78,6 +78,44 @@ const mapParamToState = {
       return empty_placeholder;
     }
   },
+  image_url: async (page) => {
+    try {
+      let _results = [];
+      const btn = await page.$('[data-testid="vehicle-image-container"] ~ button');
+      if(!btn) return _results
+      await page.click('[data-testid="vehicle-image-container"] ~ button');
+      await page.waitFor('[role="dialog"] [data-testid="vehicle-image-container"] picture source');
+      const container = await page.$('[role="dialog"] div:nth-of-type(2)')
+      if(!container) return _results;
+      await page.evaluate((contain) => {
+        contain.scrollTop = contain.scrollHeight;
+        return true
+      }, container)
+      const images = await page.$$('[role="dialog"] [data-testid="vehicle-image-container"] picture source');
+      if(!images) return _results
+      return await Promise.all(Array.from(images).map(async i => await page.evaluate((v) => {
+          const srcset = ((v || {}) as HTMLImageElement).srcset || (((v || {}) as any).dataset || {}).srcset
+          if(!srcset) return ''
+          const match = srcset.match(/(?<=1200w\,\s).*(?=\s1600w)/)
+          return match ? 'https:' + match : ''
+        }, i)
+      ))
+
+      // for(let i of Array.from(images)) {
+      //   const url = await page.evaluate((v) => {
+      //     const srcset = ((v || {}) as HTMLImageElement).srcset || (((v || {}) as any).dataset || {}).srcset
+      //     console.log(srcset, '==================')
+      //     if(!srcset) return ''
+      //     const match = srcset.match(/(?<=1200w\,\s).*(?=\s1600w)/)
+      //     return match ? 'https:' + match : ''
+      //   }, i)
+      //   _results.push(url);
+      // }
+      // return _results
+    }catch(e) {
+      console.log('image_url: ', e)
+    }
+  },
   title: "INITIAL_STATE.pages.vip.listing.title",
   current_price:
     "INITIAL_STATE.pages.vip.listing.prices.consumerPrice.localized",
@@ -238,11 +276,11 @@ async function crawling(browser: any, id: string): Promise<any> {
     }
 
     page.removeListener("request", interceptedRequest);
-    await page.close();
+    // await page.close();
     return result;
   } catch (error) {
     page.removeListener("request", interceptedRequest);
-    await page.close();
+    // await page.close();
     return Promise.reject({url: _url, vehicle_id: id});
   }
 }
@@ -257,26 +295,29 @@ const storeInRedis = (mission_id: any, isLast: boolean) => async (
 
 // test
 
-// const crawl_queue = [
-//   // "13719105",
-//   // "12926572",
-//   // "12953570",
-//   "10805682",
-//   "123",
-//   "2727598"
-//   // "12926572"
-// ];
-// const mission_id = "mission_id";
-// kijijiCarDetail(mission_id, crawl_queue);
+const crawl_queue = [
+  // "13719105",
+  // "12926572",
+  // "12953570",
+  // "10805682",
+  // "123",
+  // "2727598"
+  // "12926572"
+  "13004672",
+  "13224026"
+];
+const mission_id = "mission_id";
+kijijiCarDetail(mission_id, crawl_queue);
 
 export default async function kijijiCarDetail(mission_id, queue) {
   try {
     console.log("[kijijiauto detail crawl start]");
     console.time("used time");
     const browser = await puppeteer.launch({
-      headless: true,
-      devtools: false,
-      args: ["--no-sandbox"]
+      headless: false,
+      devtools: true,
+      args: ["--no-sandbox", "--start-maximized"],
+      defaultViewport: null,
     });
     const success_list = [];
     const error_list = [];
@@ -292,7 +333,7 @@ export default async function kijijiCarDetail(mission_id, queue) {
           storeInRedis(mission_id, isLast)(e);
         })
     );
-    await browser.close();
+    // await browser.close();
     console.log("success: ", success_list);
     console.log("error: ", error_list);
     console.timeEnd("used time");
