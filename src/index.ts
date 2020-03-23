@@ -2,19 +2,22 @@ import Koa from "koa";
 import json from "koa-json";
 import koaBody from "koa-body";
 import routers from "./router";
-import ErrorHandle from './controller/error';
+import ErrorHandle from "./controller/error";
+import Mongo from "./db";
 const app = new Koa();
 const port = 3000;
+const mongo = new Mongo();
 
 // middleware
-app.use(ErrorHandle)
+app.use(ErrorHandle);
 app.use(json());
 app.use(koaBody());
 
+
 // router
 routers.map(router => {
-  app.use(router.routes())
-  app.use(router.allowedMethods())
+  app.use(router.routes());
+  app.use(router.allowedMethods());
 });
 
 // response

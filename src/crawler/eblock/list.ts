@@ -53,7 +53,8 @@ const EBlockListCrawler = async function() {
     console.log("[eblock list crawl start]");
     console.time('used time')
     let result: IResult = resultInit;
-    const runlist_url = `https://app.eblock.com/buy/run-list?distance=500&id=5e061b64-51d0-42c5-9103-6239e41a78af&mileageLTE=105780&savedSearchId=a195a720-5a2a-46ad-91ac-018f862484a3&yearGTE=2013`;
+    // const runlist_url = `https://app.eblock.com/buy/run-list?distance=500&id=5e061b64-51d0-42c5-9103-6239e41a78af&mileageLTE=105780&savedSearchId=a195a720-5a2a-46ad-91ac-018f862484a3&yearGTE=2013`;
+    const runlist_url = `https://app.eblock.com/buy/run-list?id=7786aec1-faa4-47f9-9d2d-73826b866160`;
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     let pageInfo = {

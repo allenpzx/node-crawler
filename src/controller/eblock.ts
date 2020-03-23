@@ -29,6 +29,10 @@ async function EBlockController(ctx) {
       JSON.stringify(detail_list)
     );
 
+    ctx.body = {
+      message: 'success'
+    }
+
   } catch (e) {
     console.log("EBlockController: ", e);
   }
