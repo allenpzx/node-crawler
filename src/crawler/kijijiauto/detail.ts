@@ -100,18 +100,6 @@ const mapParamToState = {
           return match ? 'https:' + match : ''
         }, i)
       ))
-
-      // for(let i of Array.from(images)) {
-      //   const url = await page.evaluate((v) => {
-      //     const srcset = ((v || {}) as HTMLImageElement).srcset || (((v || {}) as any).dataset || {}).srcset
-      //     console.log(srcset, '==================')
-      //     if(!srcset) return ''
-      //     const match = srcset.match(/(?<=1200w\,\s).*(?=\s1600w)/)
-      //     return match ? 'https:' + match : ''
-      //   }, i)
-      //   _results.push(url);
-      // }
-      // return _results
     }catch(e) {
       console.log('image_url: ', e)
     }
@@ -276,11 +264,11 @@ async function crawling(browser: any, id: string): Promise<any> {
     }
 
     page.removeListener("request", interceptedRequest);
-    // await page.close();
+    await page.close();
     return result;
   } catch (error) {
     page.removeListener("request", interceptedRequest);
-    // await page.close();
+    await page.close();
     return Promise.reject({url: _url, vehicle_id: id});
   }
 }
@@ -314,8 +302,8 @@ export default async function kijijiCarDetail(mission_id, queue) {
     console.log("[kijijiauto detail crawl start]");
     console.time("used time");
     const browser = await puppeteer.launch({
-      headless: false,
-      devtools: true,
+      headless: true,
+      devtools: false,
       args: ["--no-sandbox", "--start-maximized"],
       defaultViewport: null,
     });
@@ -333,7 +321,7 @@ export default async function kijijiCarDetail(mission_id, queue) {
           storeInRedis(mission_id, isLast)(e);
         })
     );
-    // await browser.close();
+    await browser.close();
     console.log("success: ", success_list);
     console.log("error: ", error_list);
     console.timeEnd("used time");
