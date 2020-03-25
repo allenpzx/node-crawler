@@ -295,7 +295,7 @@ const crawl_queue = [
   "13224026"
 ];
 const mission_id = "mission_id";
-kijijiCarDetail(mission_id, crawl_queue);
+// kijijiCarDetail(mission_id, crawl_queue);
 
 export default async function kijijiCarDetail(mission_id, queue) {
   try {

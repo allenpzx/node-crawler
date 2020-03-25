@@ -13,14 +13,17 @@ async function EBlockController(ctx) {
     //     mission_id
     // } = ctx.request.body
 
-    const res = await eblockListCrawler();
+    // const res = await eblockListCrawler();
 
-    fs.writeFileSync(
-      path.resolve(__dirname, "listing.json"),
-      JSON.stringify(res)
-    );
+    // fs.writeFileSync(
+    //   path.resolve(__dirname, "listing.json"),
+    //   JSON.stringify(res)
+    // );
 
-    const queue = res.listing.map(v => v.vehicle_id);
+    // const queue = res.listing.map(v => v.vehicle_id);
+    const queue = JSON.parse(fs.readFileSync(path.resolve(__dirname, './listing.json'))).listing.map(v => v.vehicle_id);
+    // console.log(queue)
+    // return
     const mission_id = "";
     const detail_list = await eblockDetailCrawler({ queue, mission_id });
 
