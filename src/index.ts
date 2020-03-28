@@ -27,4 +27,4 @@ app.use(ctx => {
   };
 });
 
-app.listen(port, () => console.log(`App is listened on http://localhost:3000`));
+app.listen(port, () => console.log(`App is listened on http://localhost:${port}`));
