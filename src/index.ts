@@ -6,13 +6,12 @@ import ErrorHandle from "./controller/error";
 import Mongo from "./db";
 const app = new Koa();
 const port = 3000;
-const mongo = new Mongo();
+require('dotenv').config();
 
 // middleware
 app.use(ErrorHandle);
 app.use(json());
 app.use(koaBody());
-
 
 // router
 routers.map(router => {
@@ -26,5 +25,7 @@ app.use(ctx => {
     message: "Hellow World!"
   };
 });
+
+new Mongo()
 
 app.listen(port, () => console.log(`App is listened on http://localhost:${port}`));
